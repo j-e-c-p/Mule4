@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="httpListenerConfig" doc:name="HTTP Listener config" doc:id="df7ae623-7dee-498d-8c67-b4b094038851">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="http-test-projectFlow" doc:id="290c3700-687f-43bc-839e-36f62cf26219" >
+		<http:listener doc:name="Listener" doc:id="d61407a6-2bd7-4e6f-9cc1-e3d5de7decae" config-ref="httpListenerConfig" path="/test"/>
+		<set-payload value="#[attributes.queryParams['input']]" doc:name="Set Payload" doc:id="a4997502-82db-40d6-9f86-30b64ef059f2" />
+		<logger level="INFO" doc:name="Log some crap" doc:id="377c6984-6e0e-45cf-8f11-f11c7e7887c8" message="#[upper(payload) ++ ' HELLO' ++' ' ++ now()]"/>
+		
+		<ee:transform doc:name="Transform Message" doc:id="a04b08d1-3094-4386-a71e-60e6694d768b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: 'hello' ++ ' ' ++ upper(payload)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		
+		<logger message="Message is: #['$((payload as Object).message)']" level="INFO" />
+
+			
+	</flow>
+</mule>
