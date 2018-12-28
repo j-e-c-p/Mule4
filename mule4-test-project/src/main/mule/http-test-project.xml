@@ -5,13 +5,26 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
 	<http:listener-config name="httpListenerConfig" doc:name="HTTP Listener config" doc:id="df7ae623-7dee-498d-8c67-b4b094038851">
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
+	
+	<http:request-config name="httpRequestConfig" doc:name="HTTP Request configuration" doc:id="4c0817d9-1ddc-451a-8f49-97979248fd6a" >
+		<http:request-connection host="0.0.0.0" port="8081" />
+	</http:request-config>
+	
 	<flow name="http-test-projectFlow" doc:id="290c3700-687f-43bc-839e-36f62cf26219" >
-		<http:listener doc:name="Listener" doc:id="d61407a6-2bd7-4e6f-9cc1-e3d5de7decae" config-ref="httpListenerConfig" path="/test"/>
+		<http:listener doc:name="My HTTP listener" doc:id="d61407a6-2bd7-4e6f-9cc1-e3d5de7decae" config-ref="httpListenerConfig" path="/test">
+			<http:response >
+				<http:body ><![CDATA[#[vars.httpResponse]]]></http:body>
+			</http:response>
+		</http:listener>
 		<set-payload value="#[attributes.queryParams['input']]" doc:name="Set Payload" doc:id="a4997502-82db-40d6-9f86-30b64ef059f2" />
 		<logger level="INFO" doc:name="Log some crap" doc:id="377c6984-6e0e-45cf-8f11-f11c7e7887c8" message="#[upper(payload) ++ ' HELLO' ++' ' ++ now()]"/>
+		
+		<set-variable variableName="testVariable" value="djskfhasjkfb" />
+		<logger message="TEST VAR: #[vars.testVariable]" level="INFO" />
 		
 		<ee:transform doc:name="Transform Message" doc:id="a04b08d1-3094-4386-a71e-60e6694d768b" >
 			<ee:message >
@@ -25,7 +38,39 @@ output application/json
 		</ee:transform>
 		
 		<logger message="Message is: #['$((payload as Object).message)']" level="INFO" />
+		
+		<http:request method="GET" path="/receive" doc:name="Request" doc:id="e2f6a7dd-8736-458b-b4fe-a70325a18505" config-ref="httpRequestConfig" target="httpResponse">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"X-TEST-HTTP-HEADER" : "A test HTTP header"
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"testQueryStringParam" : "aTestQueryStringParam"
+}]]]></http:query-params>
+		</http:request>
 
-			
+		<logger message="PAYLOAD AFTER RESPONSE: #[payload]" level="INFO" />
+		<logger message="ACTUAL RESPONSE: #[vars.httpResponse]" level="INFO" />
+	
+	</flow>
+	
+	<flow name="http-test-projectFlow1" doc:id="6dcc86b5-65ff-4be8-8ab2-d2f2bfc963f7" >
+		<http:listener doc:name="Listener" doc:id="fbdff178-a6a4-4bee-854d-b81879e02564" config-ref="httpListenerConfig" path="/receive"/>
+		
+		<logger message="REQUEST: #[payload]" level="INFO" />
+		<logger level="INFO" doc:name="Logger" doc:id="7f16182b-cced-40cc-9fb5-aa28d59efe39" message="HEADER IS: #[attributes.headers['X-TEST-HTTP-HEADER']] QUERY STRING IS: #[attributes.queryParams['testQueryStringParam']]"/>
+		<ee:transform doc:name="Transform Message" doc:id="79ebcb92-38c8-428c-9570-2c2d4a2146f0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"key1": "value1"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>
